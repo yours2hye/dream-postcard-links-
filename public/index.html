@@ -55,21 +55,23 @@
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 12px;
   }
-  a.card {
+  .card {
+    position: relative;
     display: block;
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 14px;
     padding: 16px;
-    text-decoration: none;
-    color: inherit;
     box-shadow: var(--shadow);
     transition: transform .12s ease, border-color .12s ease;
   }
-  a.card:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .card:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .card .card-link { position: absolute; inset: 0; border-radius: inherit; }
   .card .title { font-size: 14.5px; font-weight: 600; line-height: 1.4; }
   .card .subtitle { font-size: 12.5px; color: var(--sub); margin-top: 4px; }
   .card .extra {
+    position: relative;
+    z-index: 1;
     display: inline-block;
     margin-top: 10px;
     font-size: 11.5px;
@@ -77,8 +79,9 @@
     background: var(--accent-soft);
     padding: 3px 8px;
     border-radius: 999px;
+    text-decoration: none;
   }
-  #favorites .grid a.card { border-color: #f0c419; background: #fffbea; }
+  #favorites .grid .card { border-color: #f0c419; background: #fffbea; }
   footer {
     text-align: center;
     color: var(--sub);
@@ -117,12 +120,13 @@ async function init() {
 
   function cardHTML(item) {
     const sub = item.subtitle ? `<div class="subtitle">${escapeHTML(item.subtitle)}</div>` : '';
-    const extra = item.extra ? `<a class="extra" href="${item.extra.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${escapeHTML(item.extra.label)}</a>` : '';
-    return `<a class="card" href="${item.url}" target="_blank" rel="noopener" data-search="${escapeHTML((item.title + ' ' + (item.subtitle||'')).toLowerCase())}">
+    const extra = item.extra ? `<a class="extra" href="${item.extra.url}" target="_blank" rel="noopener">${escapeHTML(item.extra.label)}</a>` : '';
+    return `<div class="card" data-search="${escapeHTML((item.title + ' ' + (item.subtitle||'')).toLowerCase())}">
+      <a class="card-link" href="${item.url}" target="_blank" rel="noopener" aria-label="${escapeHTML(item.title)}"></a>
       <div class="title">${escapeHTML(item.title)}</div>
       ${sub}
       ${extra}
-    </a>`;
+    </div>`;
   }
 
   function escapeHTML(s) {
@@ -146,7 +150,7 @@ async function init() {
     const q = e.target.value.trim().toLowerCase();
     document.querySelectorAll('[data-section], #favorites').forEach((section) => {
       let visible = 0;
-      section.querySelectorAll('a.card').forEach((card) => {
+      section.querySelectorAll('.card').forEach((card) => {
         const match = !q || card.dataset.search.includes(q);
         card.style.display = match ? '' : 'none';
         if (match) visible++;
