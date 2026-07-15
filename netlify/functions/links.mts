@@ -38,11 +38,24 @@ function normalizeCategory(text: string) {
   return text.trim().replace(/_/g, " ").replace(/\s+/g, " ");
 }
 
+const looksLikeUrl = (t: string) => /^https?:\/\//i.test(t);
+
+// sheetjs resolves hyperlink targets from the raw .rels XML without decoding
+// entities, so "&amp;" in a target survives verbatim unless unescaped here.
+function unescapeXml(s: string) {
+  return s
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'");
+}
+
 function cellInfo(raw: XLSX.CellObject | undefined): Cell {
   const text = (raw?.v ?? "").toString().trim();
   const link = (raw as any)?.l?.Target as string | undefined;
-  if (link) return { text, url: link, hasOwnLink: true };
-  if (/^https?:\/\//i.test(text)) return { text, url: text, hasOwnLink: false };
+  if (link) return { text, url: unescapeXml(link), hasOwnLink: true };
+  if (looksLikeUrl(text)) return { text, url: text, hasOwnLink: false };
   return { text, url: null, hasOwnLink: false };
 }
 
@@ -90,7 +103,10 @@ async function loadData() {
     const pool = cols.filter((cell) => cell !== primary && !(catInfo && cell === a));
 
     let title: string;
-    if (primary.hasOwnLink) {
+    // some rows have a real hyperlink whose display text is just the raw
+    // URL itself (pasted link auto-linked to itself) - that's not a usable
+    // label, so fall through to the pool search below in that case too.
+    if (primary.hasOwnLink && !looksLikeUrl(primary.text)) {
       title = primary.text;
     } else {
       const titleCell = pool.find((cell) => cell.text && !cell.url);
@@ -105,7 +121,9 @@ async function loadData() {
     if (subtitleCell) pool.splice(pool.indexOf(subtitleCell), 1);
 
     const extraCell = pool.find((cell) => cell.url);
-    const extra = extraCell ? { label: extraCell.hasOwnLink ? extraCell.text : "관련 링크", url: extraCell.url! } : null;
+    const extra = extraCell
+      ? { label: extraCell.hasOwnLink && !looksLikeUrl(extraCell.text) ? extraCell.text : "관련 링크", url: extraCell.url! }
+      : null;
 
     const favorite = title.startsWith("★");
     if (favorite) title = title.replace(/^★\s*/, "");
