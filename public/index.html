@@ -121,9 +121,10 @@ async function init() {
   function cardHTML(item) {
     const sub = item.subtitle ? `<div class="subtitle">${escapeHTML(item.subtitle)}</div>` : '';
     const extra = item.extra ? `<a class="extra" href="${item.extra.url}" target="_blank" rel="noopener">${escapeHTML(item.extra.label)}</a>` : '';
+    const titleText = item.icon ? `${item.icon} ${escapeHTML(item.title)}` : escapeHTML(item.title);
     return `<div class="card" data-search="${escapeHTML((item.title + ' ' + (item.subtitle||'')).toLowerCase())}">
       <a class="card-link" href="${item.url}" target="_blank" rel="noopener" aria-label="${escapeHTML(item.title)}"></a>
-      <div class="title">${escapeHTML(item.title)}</div>
+      <div class="title">${titleText}</div>
       ${sub}
       ${extra}
     </div>`;
