@@ -4,17 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>꿈엽서그리기대회 업무 링크 모음</title>
+<link rel="icon" href="/logo.png">
 <style>
   :root {
     color-scheme: light;
-    --bg: #f6f4fb;
+    --grad-start: #e8531c;
+    --grad-end: #ffab5e;
+    --bg: #fffaf5;
     --card: #ffffff;
-    --ink: #241f33;
-    --sub: #6b6480;
-    --accent: #7c5cff;
-    --accent-soft: #efe9ff;
-    --border: #e7e2f5;
-    --shadow: 0 1px 2px rgba(36,31,51,.05), 0 8px 24px rgba(36,31,51,.06);
+    --ink: #2c2015;
+    --sub: #8a7968;
+    --accent: #e8531c;
+    --accent-soft: #fff1e4;
+    --border: #f4e2d0;
+    --shadow: 0 1px 2px rgba(60,30,10,.05), 0 10px 24px rgba(60,30,10,.07);
   }
   * { box-sizing: border-box; }
   body {
@@ -25,63 +28,127 @@
     padding-bottom: 64px;
   }
   header {
-    padding: 48px 24px 28px;
+    background: linear-gradient(135deg, var(--grad-start), var(--grad-end));
+    padding: 44px 24px 64px;
     text-align: center;
   }
-  header h1 { font-size: 26px; margin: 0 0 6px; }
-  header p { margin: 0; color: var(--sub); font-size: 14px; }
-  .search-wrap { max-width: 480px; margin: 24px auto 0; padding: 0 24px; }
+  header img.logo {
+    width: min(260px, 60vw);
+    filter: drop-shadow(0 6px 14px rgba(0,0,0,.15));
+    margin-bottom: 18px;
+  }
+  header h1 { color: #fff; font-size: 26px; margin: 0 0 6px; }
+  header p { margin: 0; color: rgba(255,255,255,.88); font-size: 14px; }
+  .search-wrap { max-width: 480px; margin: -26px auto 0; padding: 0 24px; position: relative; z-index: 2; }
   #search {
     width: 100%;
-    padding: 12px 16px;
-    border-radius: 12px;
+    padding: 14px 18px;
+    border-radius: 14px;
     border: 1px solid var(--border);
     background: var(--card);
     font-size: 14px;
     outline: none;
+    box-shadow: var(--shadow);
   }
   #search:focus { border-color: var(--accent); }
-  main { max-width: 1080px; margin: 0 auto; padding: 8px 24px; }
-  section.group { margin-top: 36px; }
+  main { max-width: 1080px; margin: 0 auto; padding: 40px 24px 8px; }
+  section.group { margin-top: 40px; }
   .group h2 {
-    font-size: 16px;
+    font-size: 15.5px;
+    font-weight: 700;
+    color: var(--accent);
     display: flex;
     align-items: center;
     gap: 8px;
-    margin: 0 0 14px;
+    margin: 0 0 16px;
+    padding-left: 12px;
+    border-left: 4px solid var(--accent);
   }
-  .grid {
+
+  /* favorites: colorful icon tiles */
+  .fav-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 12px;
   }
-  .card {
+  .fav-card {
     position: relative;
-    display: block;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 4px;
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 16px;
+    border-radius: 16px;
+    padding: 22px 12px 18px;
     box-shadow: var(--shadow);
     transition: transform .12s ease, border-color .12s ease;
   }
-  .card:hover { transform: translateY(-2px); border-color: var(--accent); }
-  .card .card-link { position: absolute; inset: 0; border-radius: inherit; }
-  .card .title { font-size: 14.5px; font-weight: 600; line-height: 1.4; }
-  .card .subtitle { font-size: 12.5px; color: var(--sub); margin-top: 4px; }
-  .card .extra {
+  .fav-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .fav-card .card-link { position: absolute; inset: 0; border-radius: inherit; }
+  .fav-card .icon-badge {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: var(--accent-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    margin-bottom: 6px;
+  }
+  .fav-card .title { font-size: 13.5px; font-weight: 700; line-height: 1.35; }
+  .fav-card .subtitle { font-size: 11.5px; color: var(--sub); margin-top: 2px; }
+  .fav-card .extra {
     position: relative;
     z-index: 1;
     display: inline-block;
-    margin-top: 10px;
-    font-size: 11.5px;
+    margin-top: 8px;
+    font-size: 10.5px;
     color: var(--accent);
     background: var(--accent-soft);
     padding: 3px 8px;
     border-radius: 999px;
     text-decoration: none;
   }
-  #favorites .grid .card { border-color: #f0c419; background: #fffbea; }
+
+  /* regular sections: flat list rows grouped in a card */
+  .list-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .list-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .list-row:last-child { border-bottom: none; }
+  .list-row:hover { background: var(--accent-soft); }
+  .list-row .row-link { position: absolute; inset: 0; }
+  .list-row .row-text { position: relative; min-width: 0; }
+  .list-row .title { font-size: 14px; font-weight: 600; line-height: 1.4; }
+  .list-row .subtitle { font-size: 12px; color: var(--sub); margin-top: 2px; }
+  .list-row .row-right { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .list-row .extra {
+    font-size: 11px;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 3px 8px;
+    border-radius: 999px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .list-row .arrow { color: var(--sub); transition: transform .12s ease, color .12s ease; }
+  .list-row:hover .arrow { color: var(--accent); transform: translateX(3px); }
+
   footer {
     text-align: center;
     color: var(--sub);
@@ -94,12 +161,13 @@
 </head>
 <body>
 <header>
+  <img class="logo" src="/logo.png" alt="꿈엽서그리기대회 월드비전 로고">
   <h1>꿈엽서그리기대회의 모든것😎</h1>
   <p>쉿. 꿈엽서파트만 들어오세요</p>
-  <div class="search-wrap">
-    <input id="search" type="text" placeholder="자료명 검색 (예: 예산, 대시보드, 어드민...)">
-  </div>
 </header>
+<div class="search-wrap">
+  <input id="search" type="text" placeholder="자료명 검색 (예: 예산, 대시보드, 어드민...)">
+</div>
 <main id="main">
   <div class="empty">불러오는 중...</div>
 </main>
@@ -118,28 +186,49 @@ async function init() {
     return;
   }
 
-  function cardHTML(item) {
+  function escapeHTML(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function searchKey(item) {
+    return escapeHTML((item.title + ' ' + (item.subtitle || '')).toLowerCase());
+  }
+
+  function favCardHTML(item, sectionIcon) {
     const sub = item.subtitle ? `<div class="subtitle">${escapeHTML(item.subtitle)}</div>` : '';
     const extra = item.extra ? `<a class="extra" href="${item.extra.url}" target="_blank" rel="noopener">${escapeHTML(item.extra.label)}</a>` : '';
-    const titleText = item.icon ? `${item.icon} ${escapeHTML(item.title)}` : escapeHTML(item.title);
-    return `<div class="card" data-search="${escapeHTML((item.title + ' ' + (item.subtitle||'')).toLowerCase())}">
+    const icon = item.icon || sectionIcon || '⭐';
+    return `<div class="fav-card" data-search="${searchKey(item)}">
       <a class="card-link" href="${item.url}" target="_blank" rel="noopener" aria-label="${escapeHTML(item.title)}"></a>
-      <div class="title">${titleText}</div>
+      <div class="icon-badge">${icon}</div>
+      <div class="title">${escapeHTML(item.title)}</div>
       ${sub}
       ${extra}
     </div>`;
   }
 
-  function escapeHTML(s) {
-    return String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function rowHTML(item) {
+    const sub = item.subtitle ? `<div class="subtitle">${escapeHTML(item.subtitle)}</div>` : '';
+    const extra = item.extra ? `<a class="extra" href="${item.extra.url}" target="_blank" rel="noopener">${escapeHTML(item.extra.label)}</a>` : '';
+    return `<div class="list-row" data-search="${searchKey(item)}">
+      <a class="row-link" href="${item.url}" target="_blank" rel="noopener" aria-label="${escapeHTML(item.title)}"></a>
+      <div class="row-text">
+        <div class="title">${escapeHTML(item.title)}</div>
+        ${sub}
+      </div>
+      <div class="row-right">
+        ${extra}
+        <span class="arrow">→</span>
+      </div>
+    </div>`;
   }
 
   let html = '';
   if (data.favorites && data.favorites.length) {
-    html += `<section class="group" id="favorites"><h2>⭐ 자주 쓰는 자료 바로가기</h2><div class="grid">${data.favorites.map(cardHTML).join('')}</div></section>`;
+    html += `<section class="group" id="favorites"><h2>⭐ 자주 쓰는 자료 바로가기</h2><div class="fav-grid">${data.favorites.map((it) => favCardHTML(it, null)).join('')}</div></section>`;
   }
   for (const section of data.sections) {
-    html += `<section class="group" data-section><h2>${section.icon} ${escapeHTML(section.label)}</h2><div class="grid">${section.items.map(cardHTML).join('')}</div></section>`;
+    html += `<section class="group" data-section><h2>${section.icon} ${escapeHTML(section.label)}</h2><div class="list-box">${section.items.map(rowHTML).join('')}</div></section>`;
   }
   main.innerHTML = html || '<div class="empty">표시할 자료가 없습니다.</div>';
 
@@ -151,7 +240,7 @@ async function init() {
     const q = e.target.value.trim().toLowerCase();
     document.querySelectorAll('[data-section], #favorites').forEach((section) => {
       let visible = 0;
-      section.querySelectorAll('.card').forEach((card) => {
+      section.querySelectorAll('[data-search]').forEach((card) => {
         const match = !q || card.dataset.search.includes(q);
         card.style.display = match ? '' : 'none';
         if (match) visible++;
