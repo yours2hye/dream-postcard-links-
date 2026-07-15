@@ -226,24 +226,6 @@ async function loadData() {
 
 export default async (req: Request, context: Context) => {
   try {
-    const url = new URL(req.url);
-    const debugRef = url.searchParams.get("debug");
-    if (debugRef) {
-      const res = await fetch(EXPORT_URL);
-      const buf = Buffer.from(await res.arrayBuffer());
-      if (debugRef === "bold") {
-        return new Response(JSON.stringify([...getBoldRefs(buf)], null, 2), {
-          headers: { "content-type": "application/json; charset=utf-8" },
-        });
-      }
-      const wb = XLSX.read(buf, { type: "buffer" });
-      const hiddenFlags = wb.Workbook?.Sheets ?? [];
-      const visibleIndex = wb.SheetNames.findIndex((_, i) => !hiddenFlags[i]?.Hidden);
-      const ws = wb.Sheets[wb.SheetNames[visibleIndex >= 0 ? visibleIndex : 0]];
-      return new Response(JSON.stringify(ws[debugRef], null, 2), {
-        headers: { "content-type": "application/json; charset=utf-8" },
-      });
-    }
     if (!cache || Date.now() - (cache.at as number) > TTL_MS) {
       cache = { at: Date.now(), data: await loadData() };
     }
