@@ -27,8 +27,8 @@ const CATEGORY_MAP: Record<string, { icon: string; label: string }> = {
 const FALLBACK_SECTION = { icon: "📌", label: "기타" };
 const ENV_SECTION = { icon: "🔐", label: "운영·개발 환경" };
 
-type Cell = { text: string; url: string | null; hasOwnLink: boolean };
-type Item = { title: string; url: string; subtitle: string | null; extra: { label: string; url: string } | null; favorite: boolean };
+type Cell = { text: string; url: string | null; hasOwnLink: boolean; bold: boolean };
+type Item = { title: string; url: string; subtitle: string | null; extra: { label: string; url: string } | null; favorite: boolean; icon: string | null };
 type Section = { key: string; icon: string; label: string; items: Item[] };
 
 let cache: { at: number; data: unknown } | null = null;
@@ -53,17 +53,18 @@ function unescapeXml(s: string) {
 
 function cellInfo(raw: XLSX.CellObject | undefined): Cell {
   const text = (raw?.v ?? "").toString().trim();
+  const bold = !!((raw as any)?.s?.bold || (raw as any)?.s?.font?.bold);
   const link = (raw as any)?.l?.Target as string | undefined;
-  if (link) return { text, url: unescapeXml(link), hasOwnLink: true };
-  if (looksLikeUrl(text)) return { text, url: text, hasOwnLink: false };
-  return { text, url: null, hasOwnLink: false };
+  if (link) return { text, url: unescapeXml(link), hasOwnLink: true, bold };
+  if (looksLikeUrl(text)) return { text, url: text, hasOwnLink: false, bold };
+  return { text, url: null, hasOwnLink: false, bold };
 }
 
 async function loadData() {
   const res = await fetch(EXPORT_URL);
   if (!res.ok) throw new Error(`sheet export failed: ${res.status}`);
   const buf = Buffer.from(await res.arrayBuffer());
-  const wb = XLSX.read(buf, { type: "buffer" });
+  const wb = XLSX.read(buf, { type: "buffer", cellStyles: true });
 
   const hiddenFlags = wb.Workbook?.Sheets ?? [];
   const visibleIndex = wb.SheetNames.findIndex((_, i) => !hiddenFlags[i]?.Hidden);
@@ -103,18 +104,29 @@ async function loadData() {
     const pool = cols.filter((cell) => cell !== primary && !(catInfo && cell === a));
 
     let title: string;
+    let titleBold = false;
     // some rows have a real hyperlink whose display text is just the raw
     // URL itself (pasted link auto-linked to itself) - that's not a usable
     // label, so fall through to the pool search below in that case too.
     if (primary.hasOwnLink && !looksLikeUrl(primary.text)) {
       title = primary.text;
+      titleBold = primary.bold;
     } else {
       const titleCell = pool.find((cell) => cell.text && !cell.url);
       title = titleCell ? titleCell.text : new URL(primary.url!).hostname;
+      titleBold = titleCell ? titleCell.bold : false;
       if (titleCell) pool.splice(pool.indexOf(titleCell), 1);
     }
     // clean up leftover "- 어드민: " style dashes/colons from env sub-item rows
     title = title.replace(/^-\s*/, "").replace(/:\s*$/, "").trim() || title;
+
+    // a leading emoji typed into the sheet becomes the card's custom icon
+    const emojiMatch = title.match(/^(\p{Extended_Pictographic}️?)\s*/u);
+    let icon: string | null = null;
+    if (emojiMatch) {
+      icon = emojiMatch[1];
+      title = title.slice(emojiMatch[0].length).trim();
+    }
 
     const subtitleCell = pool.find((cell) => cell.text && !cell.url);
     let subtitle = subtitleCell ? subtitleCell.text : null;
@@ -125,7 +137,9 @@ async function loadData() {
       ? { label: extraCell.hasOwnLink && !looksLikeUrl(extraCell.text) ? extraCell.text : "관련 링크", url: extraCell.url! }
       : null;
 
-    const favorite = title.startsWith("★");
+    // a bolded title cell marks the row as a favorite; a leading "★" is
+    // kept as a manual override for rows that can't easily be bolded
+    const favorite = titleBold || title.startsWith("★");
     if (favorite) title = title.replace(/^★\s*/, "");
 
     const sectionMeta = catInfo ?? pendingSection ?? FALLBACK_SECTION;
@@ -133,7 +147,7 @@ async function loadData() {
       subtitle = `${pendingEnvTag} 환경`;
     }
 
-    const item: Item = { title, url: primary.url!, subtitle, extra, favorite };
+    const item: Item = { title, url: primary.url!, subtitle, extra, favorite, icon };
     if (favorite) favorites.push(item);
 
     const sectionKey = sectionMeta.label;
