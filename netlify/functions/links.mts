@@ -1,5 +1,6 @@
 import type { Context, Config } from "@netlify/functions";
 import * as XLSX from "xlsx";
+import { unzipSync, strFromU8 } from "fflate";
 
 const SHEET_ID = Netlify.env.get("SHEET_ID") || "1UJdKmCo94XOlFSIqcFFLY3SMBOa322t92GkCJg08X6g";
 const EXPORT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=xlsx`;
@@ -51,20 +52,76 @@ function unescapeXml(s: string) {
     .replace(/&apos;/g, "'");
 }
 
-function cellInfo(raw: XLSX.CellObject | undefined): Cell {
+function cellInfo(raw: XLSX.CellObject | undefined, bold: boolean): Cell {
   const text = (raw?.v ?? "").toString().trim();
-  const bold = !!((raw as any)?.s?.bold || (raw as any)?.s?.font?.bold);
   const link = (raw as any)?.l?.Target as string | undefined;
   if (link) return { text, url: unescapeXml(link), hasOwnLink: true, bold };
   if (looksLikeUrl(text)) return { text, url: text, hasOwnLink: false, bold };
   return { text, url: null, hasOwnLink: false, bold };
 }
 
+// SheetJS's public build doesn't surface font weight when reading styles, so
+// bold-cell detection (used to mark "favorite" rows) is done by hand against
+// the raw XLSX XML instead of relying on ws[ref].s.
+function getBoldRefs(buf: Buffer): Set<string> {
+  try {
+    const files = unzipSync(new Uint8Array(buf));
+    const dec = (name: string) => (files[name] ? strFromU8(files[name]) : "");
+
+    const stylesXml = dec("xl/styles.xml");
+    const fonts = stylesXml.match(/<font>[\s\S]*?<\/font>/g) || [];
+    const boldFontIds = new Set<number>();
+    fonts.forEach((f, i) => {
+      if (/<b\s*\/?>/.test(f)) boldFontIds.add(i);
+    });
+
+    const cellXfsBlock = stylesXml.match(/<cellXfs[^>]*>([\s\S]*?)<\/cellXfs>/);
+    const xfs = cellXfsBlock ? cellXfsBlock[1].match(/<xf\b[^>]*\/?>/g) || [] : [];
+    const boldXfIds = new Set<number>();
+    xfs.forEach((xf, i) => {
+      const m = xf.match(/fontId="(\d+)"/);
+      if (m && boldFontIds.has(Number(m[1]))) boldXfIds.add(i);
+    });
+
+    const workbookXml = dec("xl/workbook.xml");
+    const sheetEls = workbookXml.match(/<sheet\b[^>]*\/>/g) || [];
+    let targetRid: string | null = null;
+    for (const s of sheetEls) {
+      if (!/state="hidden"/.test(s)) {
+        const m = s.match(/r:id="(rId\d+)"/);
+        if (m) {
+          targetRid = m[1];
+          break;
+        }
+      }
+    }
+    if (!targetRid) return new Set();
+
+    const workbookRels = dec("xl/_rels/workbook.xml.rels");
+    const relMatch = workbookRels.match(new RegExp(`<Relationship[^>]*Id="${targetRid}"[^>]*Target="([^"]+)"`));
+    if (!relMatch) return new Set();
+    const sheetXml = dec(`xl/${relMatch[1]}`);
+    if (!sheetXml) return new Set();
+
+    const boldRefs = new Set<string>();
+    const cellOpenTags = sheetXml.match(/<c\s[^>]*>/g) || [];
+    for (const tag of cellOpenTags) {
+      const refM = tag.match(/\br="([A-Z]+\d+)"/);
+      const sM = tag.match(/\bs="(\d+)"/);
+      if (refM && sM && boldXfIds.has(Number(sM[1]))) boldRefs.add(refM[1]);
+    }
+    return boldRefs;
+  } catch {
+    return new Set();
+  }
+}
+
 async function loadData() {
   const res = await fetch(EXPORT_URL);
   if (!res.ok) throw new Error(`sheet export failed: ${res.status}`);
   const buf = Buffer.from(await res.arrayBuffer());
-  const wb = XLSX.read(buf, { type: "buffer", cellStyles: true });
+  const wb = XLSX.read(buf, { type: "buffer" });
+  const boldRefs = getBoldRefs(buf);
 
   const hiddenFlags = wb.Workbook?.Sheets ?? [];
   const visibleIndex = wb.SheetNames.findIndex((_, i) => !hiddenFlags[i]?.Hidden);
@@ -78,7 +135,10 @@ async function loadData() {
   let pendingEnvTag: string | null = null;
 
   for (let r = range.s.r; r <= range.e.r; r++) {
-    const cols = [0, 1, 2, 3].map((c) => cellInfo(ws[XLSX.utils.encode_cell({ r, c })]));
+    const cols = [0, 1, 2, 3].map((c) => {
+      const ref = XLSX.utils.encode_cell({ r, c });
+      return cellInfo(ws[ref], boldRefs.has(ref));
+    });
     const [a] = cols;
 
     // The sheet is hand-maintained and not strictly schema'd: most rows are
@@ -171,7 +231,12 @@ export default async (req: Request, context: Context) => {
     if (debugRef) {
       const res = await fetch(EXPORT_URL);
       const buf = Buffer.from(await res.arrayBuffer());
-      const wb = XLSX.read(buf, { type: "buffer", cellStyles: true });
+      if (debugRef === "bold") {
+        return new Response(JSON.stringify([...getBoldRefs(buf)], null, 2), {
+          headers: { "content-type": "application/json; charset=utf-8" },
+        });
+      }
+      const wb = XLSX.read(buf, { type: "buffer" });
       const hiddenFlags = wb.Workbook?.Sheets ?? [];
       const visibleIndex = wb.SheetNames.findIndex((_, i) => !hiddenFlags[i]?.Hidden);
       const ws = wb.Sheets[wb.SheetNames[visibleIndex >= 0 ? visibleIndex : 0]];
