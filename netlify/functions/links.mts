@@ -6,8 +6,17 @@ const SHEET_ID = Netlify.env.get("SHEET_ID") || "1UJdKmCo94XOlFSIqcFFLY3SMBOa322
 const EXPORT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=xlsx`;
 
 const CATEGORY_MAP: Record<string, { icon: string; label: string }> = {
-  "운영": { icon: "🗂️", label: "운영" },
+    "운영": { icon: "🗂️", label: "운영" },
+  "운영 25년 기존": { icon: "🗂️", label: "운영" },
+  "운영 참고": { icon: "🗂️", label: "운영" },
+  "운영 25년 참고": { icon: "🗂️", label: "운영" },
+  "운영 업로드": { icon: "🗂️", label: "운영" },
+  "공유 지사본": { icon: "🗂️", label: "운영" },
   "기획": { icon: "📝", label: "기획" },
+  "기획 이벤트": { icon: "📝", label: "기획" },
+  "기획 시상": { icon: "📝", label: "기획" },
+  "기획 준비": { icon: "📝", label: "기획" },
+  "기획 사업본부": { icon: "📝", label: "기획" },
   "이벤트": { icon: "🎉", label: "이벤트" },
   "심사": { icon: "🏆", label: "심사·시상" },
   "심사영상": { icon: "🏆", label: "심사·시상" },
@@ -24,6 +33,7 @@ const CATEGORY_MAP: Record<string, { icon: string; label: string }> = {
   "에이전시 관리": { icon: "🤝", label: "에이전시 관리" },
   "GIK": { icon: "🤝", label: "GIK·타부서협업" },
   "지사본": { icon: "🏢", label: "지사본" },
+  "민원": { icon: "📮", label: "민원" },
 };
 const FALLBACK_SECTION = { icon: "📌", label: "기타" };
 const ENV_SECTION = { icon: "🔐", label: "운영·개발 환경" };
